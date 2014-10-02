@@ -20,4 +20,11 @@ public class ArithmeticaException extends RuntimeException {
     public ArithmeticaException (Throwable exception) {
         super(exception);
     }
+    
+    /**
+     * Create an exception based on a caught exception with a different message.
+     */
+    public ArithmeticaException (String message, Throwable cause) {
+        super(message, cause);
+    }
 }

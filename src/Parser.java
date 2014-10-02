@@ -37,33 +37,31 @@ public class Parser {
                 try {
                     operands.add(new Expression(Integer.parseInt(token)));
                 } catch (NumberFormatException e) {
-                    throw new ArithmeticaException("unrecognized input");
+                    throw new ArithmeticaException("unrecognized input, expected number", e);
                 }
             }
             // operator -- convert previous higher order operators before push
             else {
                 if (!isOpenGroup(token)) {
-                    while (operators.size() > 0 && orderOfOperation(operators.peek()) >= order) {
-                        String op = operators.pop();
-                        if (!isOpenGroup(op)) {
-                            // convert operator into expression
-                            if (operands.size() > 1) {
-                                Expression right = operands.pop();
-                                Expression left = operands.pop();
-                                operands.add(new Expression(op, left, right));
-                            } else {
-                                throw new ArithmeticaException("not enough arguments to operator");
-                            }
-                        }
-                    }
+                    clearOperators(operators, operands, order);
                 }
                 if (!isCloseGroup(token)) {
                     operators.push(token);
                 }
             }
         }
-        // resolve any remaining operators
-        while (operators.size() > 0) {
+        clearOperators(operators, operands, 0);
+        // all operators handled, should be only one operand left, the result
+        if (operands.size() == 1) {
+            return operands.pop();
+        } else {
+            throw new ArithmeticaException("ill-formatted expression");
+        }
+    }
+
+    // clear operators off the stack, combining into new expressions 
+    private void clearOperators (Stack<String> operators, Stack<Expression> operands, int order) {
+        while (operators.size() > 0 && orderOfOperation(operators.peek()) >= order) {
             String op = operators.pop();
             if (!isOpenGroup(op)) {
                 // convert operator into expression
@@ -76,39 +74,24 @@ public class Parser {
                 }
             }
         }
-        // all operators handled, should be only one operand left, the result
-        if (operands.size() == 1) {
-            return operands.pop();
-        } else {
-            throw new ArithmeticaException("ill-formatted expression");
-        }
     }
 
-    /**
-     * @return true iff operator signifies beginning of group expression
-     */
+    // Return true iff operator signifies beginning of group expression
     private boolean isOpenGroup (String operator) {
         return operator.equals("(");
     }
 
-    /**
-     * @return true iff operator signifies end of group expression
-     */
+    // Return true iff operator signifies end of group expression
     private boolean isCloseGroup (String operator) {
         return operator.equals(")");
     }
 
-    /**
-     * @return true if operator signifies beginning or end of group expression
-     */
+    // Return true if operator signifies beginning or end of group expression
     private boolean isGrouping (String operator) {
         return isOpenGroup(operator) || isCloseGroup(operator);
     }
 
-    /**
-     * @return relative importance of operators (highest precedence indicates
-     *         that operation should be performed first)
-     */
+    // Return relative importance of operators (highest precedence means first applied)
     private int orderOfOperation (String operator) {
         if (isGrouping(operator)) {
             return 1;
